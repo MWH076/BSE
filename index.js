@@ -27,32 +27,58 @@ const googleLoginButton = document.getElementById('google_login');
 const googleLogoutButton = document.getElementById('google_logout');
 const googleNameElement = document.getElementById('google_name');
 const googlePfpElement = document.getElementById('google_pfp');
+const bakeryBanner = document.getElementById('bakery_banner');
+const screenAuth = document.getElementById('screen_auth');
+const screenBakery = document.getElementById('screen_bakery');
 
+function toggleScreens(isLoggedIn) {
+    if (isLoggedIn) {
+        screenAuth.classList.add('d-none');  // Hide login screen
+        screenBakery.classList.remove('d-none');  // Show bakery game screen
+    } else {
+        screenAuth.classList.remove('d-none');  // Show login screen
+        screenBakery.classList.add('d-none');  // Hide bakery game screen
+    }
+}
+
+// Firebase Auth state listener (check if user is logged in)
+auth.onAuthStateChanged(user => {
+    if (user) {
+        currentUser = user;
+        initGame();
+        toggleScreens(true); // Show the bakery screen
+    } else {
+        toggleScreens(false); // Show the login screen
+    }
+});
+
+// Google Login Event
 googleLoginButton.addEventListener('click', () => {
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider).then(result => {
         currentUser = result.user;
         initGame();
+        toggleScreens(true); // Show bakery screen after login
+    }).catch(error => {
+        console.error("Login error: ", error);
     });
 });
 
+// Google Logout Event
 googleLogoutButton.addEventListener('click', () => {
     auth.signOut().then(() => {
         currentUser = null;
-        toggleScreens(false);
+        toggleScreens(false); // Show login screen after logout
+    }).catch(error => {
+        console.error("Logout error: ", error);
     });
 });
-
-function toggleScreens(isLoggedIn) {
-    document.getElementById('screen_auth').classList.toggle('d-none', isLoggedIn);
-    document.getElementById('screen_bakery').classList.toggle('d-none', !isLoggedIn);
-}
 
 function initGame() {
     toggleScreens(true);
     googleNameElement.textContent = currentUser.displayName;
     googlePfpElement.src = currentUser.photoURL;
-    bakeryName = currentUser.displayName;
+    bakeryBanner.textContent = `${currentUser.displayName}'s Bakery`;
 
     db.collection('bakeries').doc(currentUser.uid).get().then(doc => {
         if (doc.exists) {
